@@ -1,0 +1,4 @@
+Average req/sec in 5 times 10s test
+with no plugin: 30376.23
+with hpkp middleware: 26403.55
+with fastify-hpkp plugin: 28998.95
