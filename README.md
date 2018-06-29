@@ -57,7 +57,7 @@ This plugin has the same options as the middleware in helmet. To learn more, you
 
 __This option is required.__
 
-Set `max-age` in header.
+Set `max-age` in header. Should be a nonnegative number.
 
 ### sha256s {array}
 
@@ -68,6 +68,10 @@ Should be a array with at least 2 SHA-256 string(one actually used and another k
 ### includeSubDomains {boolean}
 
 Set `includeSubDomains` value in header. Default is `false`.
+
+### includeSubdomains {boolean}
+
+Alias of `includeSubDomains`.
 
 ### reportUri {string}
 
@@ -93,7 +97,9 @@ app.register(fastifyHsts, {
 
 ## Changelog
 
-
+- 0.3.0
+  - Use all hpkp middleware test cases
+  - Update dependencies
 - 0.2.0
   - Add test case
   - Add code coverage

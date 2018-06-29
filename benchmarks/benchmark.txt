@@ -1,4 +1,8 @@
-Average req/sec in 5 times 10s test
-with no plugin: 30376.23
-with hpkp middleware: 26403.55
-with fastify-hpkp plugin: 28998.95
+node version: v10.5.0
+platform: darwin
+cpus: [{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":35493450,"nice":0,"sys":19398200,"idle":142739520,"irq":0}},{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":18366090,"nice":0,"sys":7914600,"idle":171339530,"irq":0}},{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":33893570,"nice":0,"sys":16196770,"idle":147529910,"irq":0}},{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":18722670,"nice":0,"sys":7734220,"idle":171163320,"irq":0}}]
+
+Average req/sec in 3 times 10s test
+with no plugin: 15734.37
+with hpkp middleware: 14310.88
+with fastify-hpkp plugin: 15987.63

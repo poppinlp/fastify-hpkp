@@ -2,10 +2,6 @@ import test from 'ava';
 import fastify from 'fastify';
 import plugin from '../src/index';
 
-const optionMissError = new Error(
-	'hpkp must be called with a maxAge and at least two SHA-256s (one actually used and another kept as a backup)'
-);
-
 test.beforeEach(t => {
 	const app = fastify();
 
@@ -16,143 +12,139 @@ test.beforeEach(t => {
 	t.context.app = app;
 });
 
-test('no option', async t => {
-	const { app } = t.context;
+const register = (t, opts) =>
+	t.context.app.register(plugin, opts).inject({ method: 'get', url: '/' });
+const mockGen = name => (t, opts) => register(t, opts).then(rsp => rsp.headers[name]);
+const mock = mockGen('public-key-pins');
+const mockReportOnly = mockGen('public-key-pins-report-only');
 
-	app.register(plugin);
-	app.after(err => {
-		t.deepEqual(err, optionMissError, 'should throw error when no option');
-	});
-	await app.inject({ method: 'get', url: '/' });
+// with improper input
+test('fails if called with no arguments', async t => {
+	await t.throws(register(t));
 });
 
-test('maxAge is not number', async t => {
-	const { app } = t.context;
-
-	app.register(plugin, {
-		maxAge: 'not number'
-	});
-	app.after(err => {
-		t.deepEqual(err, optionMissError, 'should throw error when maxAge is not number');
-	});
-	await app.inject({ method: 'get', url: '/' });
+test('fails if called with an empty object', async t => {
+	await t.throws(register(t));
 });
 
-test('sha256s is not array', async t => {
-	const { app } = t.context;
-
-	app.register(plugin, {
-		maxAge: 12345,
-		sha256s: 'not array'
-	});
-	app.after(err => {
-		t.deepEqual(err, optionMissError, 'should throw error when sha256s is not array');
-	});
-	await app.inject({ method: 'get', url: '/' });
+test('fails if called without a max-age', async t => {
+	await t.throws(register(t, { sha256s: ['abc123', 'xyz456'] }));
 });
 
-test('sha256s length less than 2', async t => {
-	const { app } = t.context;
-
-	app.register(plugin, {
-		maxAge: 12345,
-		sha256s: ['aaa']
-	});
-	app.after(err => {
-		t.deepEqual(err, optionMissError, 'should throw error when sha256s length is less than 2');
-	});
-	await app.inject({ method: 'get', url: '/' });
+test('fails if called with a lowercase "maxage" option', async t => {
+	await t.throws(register(t, { maxage: 10, sha256s: ['abc123', 'xyz456'] }));
 });
 
-test('basic passed option', async t => {
-	const { app } = t.context;
-
-	app.register(plugin, {
-		maxAge: 12345,
-		sha256s: ['aaa', 'bbb']
+[undefined, null, 'abc123', [], ['abc123']].forEach(value => {
+	test(`fails if called with invalid SHAs: ${JSON.stringify(value)}`, async t => {
+		await t.throws(register(t, { maxAge: 10, sha256s: value }));
 	});
-	app.after(err => {
-		t.is(err, null, 'should not throw error');
-	});
-
-	const rsp = await app.inject({ method: 'get', url: '/' });
-
-	t.is(rsp.payload, 'hello world');
-	t.is(rsp.headers['public-key-pins'], 'pin-sha256="aaa"; pin-sha256="bbb"; max-age=12345');
 });
 
-test('set includeSubDomains', async t => {
-	const { app } = t.context;
+test('fails if called with a zero maxAge', async t => {
+	await t.throws(register(t, { maxAge: 0, sha256s: ['abc123', 'xyz456'] }));
+});
 
-	app.register(plugin, {
-		maxAge: 12345,
-		sha256s: ['aaa', 'bbb'],
+test('fails if called with a negative maxAge', async t => {
+	await t.throws(register(t, { maxAge: -10, sha256s: ['abc123', 'xyz456'] }));
+});
+
+test('fails if called with reportOnly: true but no reportUri', async t => {
+	await t.throws(register(t, { maxAge: 10, sha256s: ['abc123', 'xyz456'], reportOnly: true }));
+});
+
+[123, true].forEach(value => {
+	test(`fails if called with no function: ${value}`, async t => {
+		await t.throws(register(t, { maxAge: 10, sha256s: ['abc123', 'xyz456'], setIf: value }));
+	});
+});
+
+// with proper input
+test('sets header with a multi-value array key called "sha256s"', async t => {
+	const header = await mock(t, { maxAge: 10, sha256s: ['abc123', 'xyz456'] });
+	t.is(header, 'pin-sha256="abc123"; pin-sha256="xyz456"; max-age=10');
+});
+
+test('can include subdomains with the includeSubdomains option', async t => {
+	const header = await mock(t, {
+		maxAge: 10,
+		sha256s: ['abc123', 'xyz456'],
+		includeSubdomains: true
+	});
+	t.is(header, 'pin-sha256="abc123"; pin-sha256="xyz456"; max-age=10; includeSubDomains');
+});
+
+test('can include subdomains with the includeSubDomains option', async t => {
+	const header = await mock(t, {
+		maxAge: 10,
+		sha256s: ['abc123', 'xyz456'],
 		includeSubDomains: true
 	});
-
-	const rsp = await app.inject({ method: 'get', url: '/' });
-
-	t.is(rsp.payload, 'hello world');
-	t.is(rsp.headers['public-key-pins'], 'pin-sha256="aaa"; pin-sha256="bbb"; max-age=12345; includeSubDomains');
+	t.is(header, 'pin-sha256="abc123"; pin-sha256="xyz456"; max-age=10; includeSubDomains');
 });
 
-test('set reportUri', async t => {
-	const { app } = t.context;
-
-	app.register(plugin, {
-		maxAge: 12345,
-		sha256s: ['aaa', 'bbb'],
-		reportUri: 'http://www.foobar.com'
+test('can set a report-uri', async t => {
+	const header = await mock(t, {
+		maxAge: 10,
+		sha256s: ['abc123', 'xyz456'],
+		reportUri: 'http://example.com'
 	});
-
-	const rsp = await app.inject({ method: 'get', url: '/' });
-
-	t.is(rsp.payload, 'hello world');
-	t.is(rsp.headers['public-key-pins'], 'pin-sha256="aaa"; pin-sha256="bbb"; max-age=12345; report-uri="http://www.foobar.com"');
+	t.is(
+		header,
+		'pin-sha256="abc123"; pin-sha256="xyz456"; max-age=10; report-uri="http://example.com"'
+	);
 });
 
-test('set reportOnly', async t => {
-	const { app } = t.context;
-
-	app.register(plugin, {
-		maxAge: 12345,
-		sha256s: ['aaa', 'bbb'],
+test('can enable Report-Only header', async t => {
+	const header = await mockReportOnly(t, {
+		maxAge: 10,
+		sha256s: ['abc123', 'xyz456'],
+		reportUri: 'http://example.com',
 		reportOnly: true
 	});
-
-	const rsp = await app.inject({ method: 'get', url: '/' });
-
-	t.is(rsp.payload, 'hello world');
-	t.is(rsp.headers['public-key-pins'], undefined);
-	t.is(rsp.headers['public-key-pins-report-only'], 'pin-sha256="aaa"; pin-sha256="bbb"; max-age=12345');
+	t.is(
+		header,
+		'pin-sha256="abc123"; pin-sha256="xyz456"; max-age=10; report-uri="http://example.com"'
+	);
 });
 
-test('set setIf but not matching', async t => {
-	const { app } = t.context;
-
-	app.register(plugin, {
-		maxAge: 12345,
-		sha256s: ['aaa', 'bbb'],
-		setIf: () => false
+test('can use a report URI and include subdomains', async t => {
+	const header = await mock(t, {
+		maxAge: 10,
+		sha256s: ['abc123', 'xyz456'],
+		reportUri: 'http://example.com',
+		includeSubDomains: true
 	});
-
-	const rsp = await app.inject({ method: 'get', url: '/' });
-
-	t.is(rsp.payload, 'hello world');
-	t.is(rsp.headers['public-key-pins'], undefined);
+	t.is(
+		header,
+		'pin-sha256="abc123"; pin-sha256="xyz456"; max-age=10; includeSubDomains; report-uri="http://example.com"'
+	);
 });
 
-test('set setIf and matching', async t => {
-	const { app } = t.context;
+test('rounds down to the nearest second', async t => {
+	const header = await mock(t, { maxAge: 1.234, sha256s: ['abc123', 'xyz456'] });
+	t.is(header, 'pin-sha256="abc123"; pin-sha256="xyz456"; max-age=1');
+});
 
-	app.register(plugin, {
-		maxAge: 12345,
-		sha256s: ['aaa', 'bbb'],
+test('rounds up to the nearest second', async t => {
+	const header = await mock(t, { maxAge: 1.567, sha256s: ['abc123', 'xyz456'] });
+	t.is(header, 'pin-sha256="abc123"; pin-sha256="xyz456"; max-age=2');
+});
+
+test('set the header when the condition is true', async t => {
+	const header = await mock(t, {
+		maxAge: 10,
+		sha256s: ['abc123', 'xyz456'],
 		setIf: () => true
 	});
+	t.is(header, 'pin-sha256="abc123"; pin-sha256="xyz456"; max-age=10');
+});
 
-	const rsp = await app.inject({ method: 'get', url: '/' });
-
-	t.is(rsp.payload, 'hello world');
-	t.is(rsp.headers['public-key-pins'], 'pin-sha256="aaa"; pin-sha256="bbb"; max-age=12345');
+test('not set the header when the condition is false', async t => {
+	const header = await mock(t, {
+		maxAge: 10,
+		sha256s: ['abc123', 'xyz456'],
+		setIf: () => false
+	});
+	t.is(header, undefined);
 });
