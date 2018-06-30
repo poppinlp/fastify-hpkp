@@ -25,7 +25,7 @@ const test = name => new Promise((resolve, reject) => {
 
 	autocannon({
 		url: `http://${host}:${port}${path}`,
-		connections: 1000,
+		connections: 100,
 		pipelining: 1,
 		duration: 10
 	}, (err, results) => {

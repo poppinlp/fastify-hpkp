@@ -1,8 +1,8 @@
 node version: v10.5.0
 platform: darwin
-cpus: [{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":35493450,"nice":0,"sys":19398200,"idle":142739520,"irq":0}},{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":18366090,"nice":0,"sys":7914600,"idle":171339530,"irq":0}},{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":33893570,"nice":0,"sys":16196770,"idle":147529910,"irq":0}},{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":18722670,"nice":0,"sys":7734220,"idle":171163320,"irq":0}}]
+cpus: [{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":39979110,"nice":0,"sys":21778670,"idle":161748420,"irq":0}},{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":20920730,"nice":0,"sys":8966340,"idle":193606200,"irq":0}},{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":38222010,"nice":0,"sys":18208020,"idle":167063280,"irq":0}},{"model":"Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz","speed":3100,"times":{"user":21299200,"nice":0,"sys":8714340,"idle":193479710,"irq":0}}]
 
 Average req/sec in 3 times 10s test
-with no plugin: 15734.37
-with hpkp middleware: 14310.88
-with fastify-hpkp plugin: 15987.63
+with no plugin: 25213.04
+with hpkp middleware: 18524.37
+with fastify-hpkp plugin: 21982.00
