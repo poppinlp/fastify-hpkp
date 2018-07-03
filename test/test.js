@@ -24,7 +24,7 @@ test('fails if called with no arguments', async t => {
 });
 
 test('fails if called with an empty object', async t => {
-	await t.throws(register(t));
+	await t.throws(register(t, {}));
 });
 
 test('fails if called without a max-age', async t => {
