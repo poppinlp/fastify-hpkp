@@ -17,6 +17,11 @@ You may know [hpkp](https://github.com/helmetjs/hpkp) as a [hpkp middleware](htt
 
 You may find the reason in [benchmark result](./benchmarks/benchmark.txt) and wish you like it. :)
 
+## Difference
+
+This plugin has passed all [hpkp](https://github.com/helmetjs/hpkp) test cases.
+And no difference in options.
+
 ## Install
 
 Via npm:
